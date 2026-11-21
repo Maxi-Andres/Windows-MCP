@@ -64,6 +64,13 @@ class ControlCoordinator:
         self.enabled = True
         self.idle_timeout_seconds = 10.0
         self.call_lease_timeout_seconds = 30.0
+        # Fork (Maxi-Andres/Windows-MCP): hand the desktop back after this many seconds with no
+        # AI call, so the person's keys are not swallowed when the agent forgets to release. 0 = off.
+        try:
+            self.idle_release_seconds = float(__import__("os").environ.get("WINDOWS_MCP_IDLE_RELEASE_SECONDS", 0))
+        except ValueError:
+            self.idle_release_seconds = 0.0
+        self._last_call_end = 0.0
         self.policy = "relaxed"
         self.consent_countdown_seconds = 10
         self._lock = threading.Lock()
@@ -298,6 +305,13 @@ class ControlCoordinator:
         ):
             # Time-bound the input suppression lease when an in-flight call stalls.
             return self._set_locked("ready")
+        if (  # Fork: idle auto-release (keeps consent, so no new countdown prompt).
+            self._state == "ai"
+            and self._active_calls == 0
+            and self.idle_release_seconds > 0
+            and now - self._last_call_end >= self.idle_release_seconds
+        ):
+            return self._set_locked("ready")
         # Otherwise AI control ends on release(), a user takeover, or shutdown.
         return False
 
@@ -444,6 +458,7 @@ class ControlCoordinator:
             self._active_calls = max(0, self._active_calls - 1)
             if self._active_calls == 0:
                 self._active_call_since = None
+                self._last_call_end = time.monotonic()  # Fork: idle auto-release
 
     def release(self) -> dict:
         """End AI control at the agent's request; a running call stops at its next checkpoint."""
