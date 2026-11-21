@@ -587,3 +587,11 @@ def _run_overlay(
                 _active_overlay = None
             _all_overlays.discard(overlay)
         overlay.closed_event.set()
+
+
+# Fork (Maxi-Andres/Windows-MCP): WINDOWS_MCP_OVERLAY_STYLE=claude draws the same thin edge
+# as the control indicator, in amber, on the captured monitor(s).
+if os.environ.get("WINDOWS_MCP_OVERLAY_STYLE", "").strip().lower() == "claude":
+    from windows_mcp.desktop.claude_overlay_art import _flash_glow_rgba as _render_glow_rgba  # noqa: E402,F811
+    from windows_mcp.desktop.claude_overlay_art import _flash_intensity as _intensity_at  # noqa: E402,F811
+    _FULLSCREEN_INSET = 0  # flush with the screen edge, like the control indicator

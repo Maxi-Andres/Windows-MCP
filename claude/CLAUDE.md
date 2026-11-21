@@ -12,6 +12,7 @@ excepciones (revisarlas si un merge de upstream choca):
   `src/windows_mcp/desktop/control_overlay_art.py` que lo cargan si `WINDOWS_MCP_OVERLAY_STYLE=claude`;
 - `src/windows_mcp/desktop/claude_consent.py` (nuevo, nuestro) y el bloque `__main__` de
   `src/windows_mcp/desktop/control_consent.py`, que lo usa con la misma variable;
+- las líneas `Fork` al final de `src/windows_mcp/desktop/flash_overlay.py` (destello de captura en naranja);
 - `src/windows_mcp/desktop/control.py`: 3 bloques marcados `Fork` para la liberación automática
   (`WINDOWS_MCP_IDLE_RELEASE_SECONDS`), con su test en `tests/test_fork_idle_release.py` (archivo nuevo).
 
@@ -44,7 +45,7 @@ viendo siempre qué hace (aunque no pida permiso).
 - **Aviso de consentimiento rediseñado** (el "AI is about to take control" con cuenta regresiva, tkinter gris): con el mismo estilo `claude` sale una tarjeta oscura arriba al centro, en castellano, con "No, ahora no" / "Dejar ahora" y una barra ámbar que se achica. Mismo contrato que el original (`allow`/`deny`/`timeout`, códigos 10/11/12), no toma foco (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`). Se ejecuta en un proceso aparte con `python -I`, por eso carga `claude_consent.py` por ruta y no importa el paquete. Aparece al empezar cada período de control (también después de que Max me frena). Duración: `control.consent_countdown_seconds` en `~/.windows-mcp/config.toml` (default 10, 0 = sin aviso).
   - Probar en vivo: `$env:WINDOWS_MCP_OVERLAY_STYLE='claude'; & $py -I <site-packages>\windows_mcp\desktop\control_consent.py 7` (exit 10/11/12). Vista previa: `& $py -I ...\claude_consent.py --preview out.png`.
   - Nada en el paquete puede escribir a stdout (`tests/test_no_stdout_writes.py`): stdout es el canal MCP.
-- **Destello de captura apagado** (`WINDOWS_MCP_DISABLE_FLASH=1`): el HUD ya muestra "mirando tu pantalla".
+- **Destello de captura = mismo borde fino, en naranja**: cuando Claude solo *mira* (Screenshot/Snapshot no toman el control, así que no hay borde azul), el monitor o los monitores capturados muestran la misma línea de 2 px que el control pero naranja, ~3,5 s (aparece rápido, se mantiene, se desvanece). Así Max ve qué monitor miro. Implementado con `_flash_glow_rgba`/`_flash_intensity` en `claude_overlay_art.py` y `_FULLSCREEN_INSET = 0`. Con el estilo activado falla `test_flash_overlay.py::...test_premultiplies_once_and_fades_with_opacity` (verifica la curva de upstream). Esperado. (Antes estaba apagado con `WINDOWS_MCP_DISABLE_FLASH=1`; a Max le gustó tenerlo así.)
 - Cambios de `env` o de `src/` recién se ven cuando se reinicia el servidor: `/mcp` → windows → Reconnect, o reiniciar Claude Code.
 - **El HUD y el hook corren con el Python del venv de la herramienta** (`<uv tool dir>\windows-mcp\Scripts\python.exe`): ya trae Pillow, numpy y psutil, no hay que instalar nada más.
 

@@ -221,3 +221,30 @@ def _notice_glow_bitmap(
     tint.putalpha(shadow.point(lambda v: v * 40 // 255))
     out.alpha_composite(tint)
     return premultiplied_bgra(out, 1.0)
+
+
+# ----------------------------------------------------------------- capture flash
+# Used by flash_overlay.py (same switch): while Claude *looks* at the screen, the
+# captured monitor(s) get the same thin edge as the control indicator, in amber.
+
+
+def _flash_glow_rgba(width, height, rect_list, *, outward=True):
+    """Thin amber edge just inside each captured rect (window-local coordinates)."""
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    for x1, y1, x2, y2 in rect_list:
+        for depth in range(_BORDER):
+            alpha = _glow_alpha(depth, _BORDER)
+            if alpha:
+                draw.rectangle((x1 + depth, y1 + depth, x2 - depth - 1, y2 - depth - 1),
+                               outline=(*_AMBER, alpha), width=1)
+    return image
+
+
+def _flash_intensity(t_norm, full_screen):
+    """Quick fade-in, hold while 'mirando' shows in the HUD, gentle fade-out."""
+    if t_norm < 0.06:
+        return t_norm / 0.06
+    if t_norm < 0.75:
+        return 1.0
+    return max(0.0, 1.0 - (t_norm - 0.75) / 0.25)

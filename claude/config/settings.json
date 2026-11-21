@@ -7,7 +7,6 @@
     "env": {
       "ANONYMIZED_TELEMETRY": "false",
       "WINDOWS_MCP_OVERLAY_STYLE": "claude",
-      "WINDOWS_MCP_DISABLE_FLASH": "1",
       "WINDOWS_MCP_IDLE_RELEASE_SECONDS": "20"
     }
   },
