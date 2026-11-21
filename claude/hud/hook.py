@@ -3,6 +3,8 @@
 Turns each desktop action Claude is about to take into a short Spanish line,
 appends it to the HUD log and makes sure the on-screen HUD (hud.pyw) is running.
 It never blocks or alters the tool call: any error is swallowed and it exits 0.
+
+Each log line: {"t": epoch, "type": icon id, "text": "...", "kind": look|act|danger|info}
 """
 
 import json
@@ -12,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 
-DIR = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "claude-hud"
+DIR = Path(os.environ.get("CLAUDE_HUD_DIR") or Path(os.environ.get("LOCALAPPDATA", Path.home())) / "claude-hud")
 LOG = DIR / "actions.jsonl"
 BEAT = DIR / "heartbeat"
 HUD = Path(__file__).with_name("hud.pyw")
@@ -36,15 +38,19 @@ def where(i):
     return ""
 
 
+def truthy(v):
+    return str(v).lower() == "true"
+
+
 def describe(tool, i):
-    """Return (icon, text, kind). kind: look | act | danger | info."""
+    """Return (type, text, kind). type picks the icon; kind picks the color."""
     if tool == "Screenshot":
         extra = " (una zona)" if i.get("region") else ""
-        return "◉", f"Mirando la pantalla{extra}", "look"
+        return "look", f"Mirando la pantalla{extra}", "look"
     if tool == "Snapshot":
-        extra = " + captura" if str(i.get("use_vision")).lower() == "true" else ""
-        web = " de la página web" if str(i.get("use_dom")).lower() == "true" else ""
-        return "◉", f"Leyendo botones y textos{web}{extra}", "look"
+        extra = " + captura" if truthy(i.get("use_vision")) else ""
+        web = " de la página web" if truthy(i.get("use_dom")) else ""
+        return "look", f"Leyendo botones y textos{web}{extra}", "look"
     if tool == "Click":
         button = i.get("button", "left")
         clicks = int(i.get("clicks", 1) or 1)
@@ -53,64 +59,76 @@ def describe(tool, i):
             name += " derecho"
         elif button == "middle":
             name += " del medio"
-        return "➤", name + where(i), "act"
+        return "click", name + where(i), "act"
     if tool == "Type":
-        enter = " + Enter" if str(i.get("press_enter")).lower() == "true" else ""
-        clear = " (borrando antes)" if str(i.get("clear")).lower() == "true" else ""
-        return "⌨", f"Escribiendo «{short(i.get('text'), 50)}»{where(i)}{clear}{enter}", "act"
+        enter = " + Enter" if truthy(i.get("press_enter")) else ""
+        if not i.get("text") and truthy(i.get("clear")):
+            return "type", f"Borrando el texto{where(i)}", "act"
+        clear = " (borrando antes)" if truthy(i.get("clear")) else ""
+        return "type", f"Escribiendo «{short(i.get('text'), 50)}»{where(i)}{clear}{enter}", "act"
     if tool == "Scroll":
-        d = {"up": "arriba", "down": "abajo", "left": "izquierda", "right": "derecha"}
+        d = {"up": "arriba", "down": "abajo", "left": "la izquierda", "right": "la derecha"}
         times = i.get("wheel_times", 1)
-        return "↕", f"Scroll hacia {d.get(i.get('direction', 'down'), '?')} ×{times}{where(i)}", "act"
+        return "scroll", f"Scroll hacia {d.get(i.get('direction', 'down'), '?')} ×{times}{where(i)}", "act"
     if tool == "Move":
-        if str(i.get("drag")).lower() == "true":
+        if truthy(i.get("drag")):
             src = i.get("from_loc")
             src = f" desde {short(src, 20)}" if src else ""
-            return "✥", f"Arrastrando{src} hasta{where(i)[3:] or ' ?'}", "act"
-        return "✥", f"Moviendo el mouse{where(i).replace(' en ', ' a ')}", "act"
+            return "move", f"Arrastrando{src} hasta{where(i)[3:] or ' ?'}", "act"
+        return "move", f"Moviendo el mouse{where(i).replace(' en ', ' a ')}", "act"
     if tool == "Shortcut":
-        return "⌨", f"Atajo de teclado: {short(i.get('shortcut'), 30)}", "act"
+        return "key", f"Atajo de teclado: {short(i.get('shortcut'), 30)}", "act"
     if tool == "App":
         mode = i.get("mode", "launch")
         name = short(i.get("name") or i.get("executable") or "", 40)
         if mode == "launch":
-            return "▶", f"Abriendo {name}", "act"
+            return "app", f"Abriendo {name}", "act"
         if mode == "launch_executable":
-            return "▶", f"Ejecutando {name}", "act"
+            return "app", f"Ejecutando {name}", "act"
         if mode == "switch":
-            return "▢", f"Cambiando a la ventana {name}", "act"
-        return "▢", f"Moviendo/redimensionando la ventana {name}", "act"
+            return "window", f"Cambiando a la ventana {name}", "act"
+        return "window", f"Moviendo/redimensionando la ventana {name}", "act"
     if tool == "Process":
         if i.get("mode") == "kill":
             target = i.get("name") or f"PID {i.get('pid')}"
-            return "✕", f"Cerrando el proceso {short(target, 40)}", "danger"
-        return "≡", "Viendo los programas abiertos", "info"
+            return "kill", f"Cerrando el proceso {short(target, 40)}", "danger"
+        return "list", "Viendo los programas abiertos", "info"
     if tool == "Clipboard":
         if i.get("mode") == "set":
-            return "⎘", f"Copiando al portapapeles «{short(i.get('text'), 40)}»", "act"
-        return "⎘", "Leyendo el portapapeles", "look"
+            return "clipboard", f"Copiando al portapapeles «{short(i.get('text'), 40)}»", "act"
+        return "clipboard", "Leyendo el portapapeles", "look"
     if tool == "Scrape":
-        return "◎", f"Leyendo la web {short(i.get('url'), 50)}", "info"
+        return "web", f"Leyendo la web {short(i.get('url'), 50)}", "info"
     if tool == "Notification":
-        return "✉", f"Mostrándote una notificación: {short(i.get('title'), 40)}", "info"
+        return "notify", f"Mostrándote una notificación: {short(i.get('title'), 40)}", "info"
     if tool == "Wait":
-        return "⏳", f"Esperando {i.get('duration')} s", "info"
+        return "wait", f"Esperando {i.get('duration')} s", "info"
     if tool == "WaitFor":
         what = i.get("text") or i.get("window_name") or i.get("condition")
-        return "⏳", f"Esperando a que aparezca {short(what, 40)}", "info"
+        return "wait", f"Esperando a que aparezca {short(what, 40)}", "info"
     if tool == "MultiSelect":
         n = len(i.get("locs") or i.get("labels") or [])
-        return "➤", f"Seleccionando {n} elementos", "act"
+        return "select", f"Seleccionando {n} elementos", "act"
     if tool == "MultiEdit":
         n = len(i.get("locs") or i.get("labels") or [])
-        return "⌨", f"Completando {n} campos", "act"
+        return "type", f"Completando {n} campos", "act"
     if tool == "DisplayInventory":
-        return "ⓘ", "Viendo la info de los monitores", "info"
+        return "display", "Viendo la info de los monitores", "info"
     if tool == "ControlStatus":
-        if str(i.get("release")).lower() == "true":
-            return "ⓘ", "Devolviéndote el control", "info"
-        return "ⓘ", "Chequeando quién tiene el control", "info"
-    return "•", tool, "info"
+        if truthy(i.get("release")):
+            return "info", "Devolviéndote el control", "info"
+        return "info", "Chequeando quién tiene el control", "info"
+    return "info", tool, "info"
+
+
+def log_event(type_, text, kind):
+    DIR.mkdir(parents=True, exist_ok=True)
+    line = {"t": time.time(), "type": type_, "text": text, "kind": kind}
+    with LOG.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    if LOG.stat().st_size > 200_000:  # keep the log small
+        lines = LOG.read_text(encoding="utf-8").splitlines()[-300:]
+        LOG.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def ensure_hud():
@@ -140,13 +158,7 @@ def main():
     # (PowerShell pipes add one) would break json parsing.
     payload = json.loads(sys.stdin.buffer.read().decode("utf-8-sig"))
     tool = payload.get("tool_name", "").split("__")[-1]
-    icon, text, kind = describe(tool, payload.get("tool_input") or {})
-    DIR.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"t": time.time(), "icon": icon, "text": text, "kind": kind}, ensure_ascii=False) + "\n")
-    if LOG.stat().st_size > 200_000:  # keep the log small
-        lines = LOG.read_text(encoding="utf-8").splitlines()[-300:]
-        LOG.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    log_event(*describe(tool, payload.get("tool_input") or {}))
     ensure_hud()
 
 
