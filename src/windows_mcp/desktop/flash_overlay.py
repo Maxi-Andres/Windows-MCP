@@ -595,3 +595,27 @@ if os.environ.get("WINDOWS_MCP_OVERLAY_STYLE", "").strip().lower() == "claude":
     from windows_mcp.desktop.claude_overlay_art import _flash_glow_rgba as _render_glow_rgba  # noqa: E402,F811
     from windows_mcp.desktop.claude_overlay_art import _flash_intensity as _intensity_at  # noqa: E402,F811
     _FULLSCREEN_INSET = 0  # flush with the screen edge, like the control indicator
+
+    _upstream_show_capture_flash = show_capture_flash
+
+    def show_capture_flash(capture_rect: "object | None" = None) -> None:  # noqa: F811
+        """Fork: one edge per monitor when a capture covers every monitor.
+
+        Upstream gets the bounding box of the selected displays, so with monitors of
+        different sizes the edge ran off-screen and skipped the seam between them.
+        """
+        if capture_rect is not None:
+            try:
+                import windows_mcp.uia as uia
+
+                monitors = uia.GetMonitorsRect()
+                inside = [
+                    m for m in monitors
+                    if m.left >= capture_rect.left and m.top >= capture_rect.top
+                    and m.right <= capture_rect.right and m.bottom <= capture_rect.bottom
+                ]
+                if len(monitors) > 1 and len(inside) == len(monitors):
+                    capture_rect = None  # upstream's full-desktop path: one edge per monitor
+            except Exception:
+                logger.debug("could not split capture flash per monitor", exc_info=True)
+        return _upstream_show_capture_flash(capture_rect)
