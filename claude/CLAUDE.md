@@ -82,4 +82,4 @@ viendo siempre qué hace (aunque no pida permiso).
 
 ## Estado
 
-- 2026-11-21: HUD rediseñado (Pillow + ventana layered) para reemplazar la versión tkinter que a Max le pareció fea; mostrado con la demo y acciones reales. Aviso de control de Windows-MCP rediseñado con el mismo estilo. Esperando su opinión sobre ambos. Cambios sin commitear hasta que Max lo pida.
+- 2026-11-21: HUD rediseñado (Pillow + ventana layered) para reemplazar la versión tkinter que a Max le pareció fea; mostrado con la demo y acciones reales. Aviso de control de Windows-MCP rediseñado con el mismo estilo. A Max le gustaron. Después: aviso de consentimiento rediseñado (5 s), liberación automática a los 20 s, Dependabot desactivado. Todo commiteado y pusheado el mismo día.
