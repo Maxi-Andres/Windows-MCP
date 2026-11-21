@@ -21,7 +21,8 @@ Después reiniciá Claude Code. Se puede correr de nuevo cuantas veces quieras: 
 
 ## Qué hace el instalador
 
-1. Instala Windows-MCP **desde este repo** (`uv tool install`), así que cualquier cambio nuestro al código se aplica.
+1. Instala Windows-MCP **desde este repo**, así que cualquier cambio nuestro al código se aplica.
+   Si ya estaba instalado lo actualiza en el lugar, así funciona aunque Claude Code esté abierto.
 2. Lo registra en Claude Code como servidor `windows` (a nivel usuario), con la telemetría apagada
    y **sin** las herramientas `PowerShell`, `FileSystem` y `Registry` (Claude ya tiene las suyas, y Registry es riesgosa).
 3. Copia el panel a `~/.claude/hooks/windows-hud/`.
@@ -49,7 +50,16 @@ Los clics lo atraviesan, nunca roba el foco y **no sale en capturas** (ni en las
 Historial completo en `%LOCALAPPDATA%\claude-hud\actions.jsonl`.
 Para probarlo y que sí salga en capturas: variable de entorno `CLAUDE_HUD_VISIBLE_IN_CAPTURE=1`.
 
-Archivos: [`hud/hook.py`](hud/hook.py) (traduce cada acción a una frase) y [`hud/hud.pyw`](hud/hud.pyw) (el panel).
+Archivos: [`hud/hook.py`](hud/hook.py) (traduce cada acción a una frase) y [`hud/hud.pyw`](hud/hud.pyw)
+(el panel: ventana con transparencia real dibujada con Pillow, íconos de Windows 11). Corren con el Python
+de Windows-MCP, que ya trae Pillow, así que no hay que instalar nada más.
+
+Para ver cómo se ve sin esperar a que Claude haga algo (`$py` = `%APPDATA%\uv\tools\windows-mcp\Scripts\python.exe`):
+
+```powershell
+& $py .\claude\hud\demo.py                       # demo en vivo de ~40 s con todos los estados
+& $py .\claude\hud\hud.pyw --preview estados.png # todos los estados en una imagen
+```
 
 ## Frenar a Claude
 

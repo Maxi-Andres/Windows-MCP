@@ -37,22 +37,29 @@ if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
 
 $version = (git -C $repoRoot describe --tags 2>$null)
 Step "Installing $($mcp.package) from $repoRoot ($version)"
-uv tool install --force --reinstall-package $mcp.package --python $mcp.python $repoRoot
-if ($LASTEXITCODE -ne 0) { Fail 'uv tool install failed' }
+$venvPy = Join-Path (uv tool dir).Trim() "$($mcp.package)\Scripts\python.exe"
+if (Test-Path $venvPy) {
+    # Already installed: update in place. `uv tool install --force` would delete the tool's
+    # folder first, which fails (and half-breaks it) while Claude Code has the server running.
+    uv pip install --python $venvPy --reinstall-package $mcp.package $repoRoot
+    if ($LASTEXITCODE -ne 0) { Fail 'uv pip install failed' }
+} else {
+    uv tool install --python $mcp.python $repoRoot
+    if ($LASTEXITCODE -ne 0) { Fail 'uv tool install failed' }
+}
 $binDir = (uv tool dir --bin).Trim()
 $exe = Join-Path $binDir 'windows-mcp.exe'
 if (-not (Test-Path $exe)) { Fail "windows-mcp.exe not found in $binDir" }
 
-Step 'Finding a Python with tkinter for the HUD'
-$py = (uv python find 3.13 2>$null)
-if ($LASTEXITCODE -ne 0 -or -not $py) {
-    uv python install 3.13
-    $py = (uv python find 3.13)
-}
-$py = "$py".Trim()
-& $py -c "import tkinter" 2>$null
-if ($LASTEXITCODE -ne 0) { Fail "Python at $py has no tkinter" }
+Step 'Checking the Python the HUD runs on'
+# The HUD (Pillow + numpy) and its hook run on the windows-mcp tool's own Python,
+# which already has those packages, so nothing extra is installed.
+$toolDir = (uv tool dir).Trim()
+$py = Join-Path $toolDir "$($mcp.package)\Scripts\python.exe"
+if (-not (Test-Path $py)) { Fail "Python not found at $py" }
 if (-not (Test-Path (Join-Path (Split-Path $py) 'pythonw.exe'))) { Fail "pythonw.exe not found next to $py" }
+& $py -c "import PIL, numpy, psutil" 2>$null
+if ($LASTEXITCODE -ne 0) { Fail "Pillow/numpy/psutil missing in $py" }
 Write-Host "Using $py"
 
 Step 'Installing the HUD'
@@ -82,6 +89,10 @@ if (Test-Path $settings) {
 }
 & $py (Join-Path $root 'scripts\merge_settings.py') $settings $cfgPath --python $py --hook (Join-Path $hudDir 'hook.py')
 if ($LASTEXITCODE -ne 0) { Fail 'Could not update settings.json' }
+
+Step 'Applying Windows-MCP settings (~/.windows-mcp/config.toml)'
+& $py (Join-Path $root 'scripts\apply_mcp_config.py') $cfgPath
+if ($LASTEXITCODE -ne 0) { Fail 'Could not update ~/.windows-mcp/config.toml' }
 
 Step 'Done'
 Write-Host 'Restart Claude Code (or reconnect the server in /mcp) so the tools load.'

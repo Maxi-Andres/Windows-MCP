@@ -5,7 +5,15 @@
     "python": "3.14",
     "exclude_tools": "PowerShell,FileSystem,Registry",
     "env": {
-      "ANONYMIZED_TELEMETRY": "false"
+      "ANONYMIZED_TELEMETRY": "false",
+      "WINDOWS_MCP_OVERLAY_STYLE": "claude",
+      "WINDOWS_MCP_DISABLE_FLASH": "1",
+      "WINDOWS_MCP_IDLE_RELEASE_SECONDS": "20"
+    }
+  },
+  "windows_mcp": {
+    "control": {
+      "consent_countdown_seconds": 5
     }
   },
   "permissions": {
