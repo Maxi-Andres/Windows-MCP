@@ -1,3 +1,22 @@
+> [!NOTE]
+> **Esta es una copia de [CursorTouch/Windows-MCP](https://github.com/CursorTouch/Windows-MCP)** con una capa propia para usarlo con **Claude Code**: que Claude maneje la PC (ver la pantalla, mouse, teclado, abrir apps) y que vos veas siempre qué está haciendo.
+>
+> Lo que agrega esta versión:
+> - **Panel en pantalla** que muestra en castellano cada acción de Claude, en el momento (mirando, click, escribiendo, abriendo apps...).
+> - **Avisos de control rediseñados**, en castellano y más discretos: borde fino, pastilla arriba al centro y cuenta regresiva de 5 s.
+> - **Devuelve el control solo** después de 20 s sin acciones, así nunca te quedás sin teclado.
+> - **Instalador de un comando** que deja cualquier PC lista (telemetría apagada, permisos, panel).
+>
+> ```powershell
+> git clone https://github.com/Maxi-Andres/Windows-MCP.git
+> powershell -ExecutionPolicy Bypass -File .\Windows-MCP\claude\install.ps1
+> ```
+>
+> Todo lo propio está en [`claude/`](claude/README.md): ahí están la guía completa, cómo traer las versiones nuevas de CursorTouch y cómo desinstalar.
+> Abajo sigue el README original del proyecto (en inglés).
+
+---
+
 <div align="center">
   <h1>🪟 Windows-MCP</h1>
 

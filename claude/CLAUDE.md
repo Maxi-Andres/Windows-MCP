@@ -7,6 +7,7 @@ le muestra a Max en pantalla todo lo que Claude hace. **Todo lo nuestro vive en 
 el resto es código de ellos sin tocar, para poder traer sus versiones sin conflictos. Únicas
 excepciones (revisarlas si un merge de upstream choca):
 - la línea `@claude/CLAUDE.md` al principio del `CLAUDE.md` de la raíz;
+- el bloque `> [!NOTE]` + `---` al principio del `README.md` de la raíz (presenta esta versión y manda a `claude/README.md`);
 - `src/windows_mcp/desktop/claude_overlay_art.py` (archivo nuevo, nuestro) y las 3 líneas al final de
   `src/windows_mcp/desktop/control_overlay_art.py` que lo cargan si `WINDOWS_MCP_OVERLAY_STYLE=claude`;
 - `src/windows_mcp/desktop/claude_consent.py` (nuevo, nuestro) y el bloque `__main__` de
