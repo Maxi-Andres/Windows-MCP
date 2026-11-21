@@ -102,4 +102,9 @@ def _show(seconds: int) -> str:
 
 
 if __name__ == "__main__":
+    # Fork (Maxi-Andres/Windows-MCP): WINDOWS_MCP_OVERLAY_STYLE=claude uses claude_consent.py.
+    if __import__("os").environ.get("WINDOWS_MCP_OVERLAY_STYLE", "").strip().lower() == "claude":
+        import importlib.util, pathlib  # noqa: E401  (file import: -I mode, keep the package unloaded)
+        _spec = importlib.util.spec_from_file_location("claude_consent", pathlib.Path(__file__).with_name("claude_consent.py"))
+        _mod = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_mod); _show = _mod.show  # noqa: E702
     sys.exit(_EXIT_CODES[_show(int(sys.argv[1]))])

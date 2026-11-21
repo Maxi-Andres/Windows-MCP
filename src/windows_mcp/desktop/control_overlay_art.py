@@ -236,3 +236,8 @@ def _notice_glow_bitmap(
     peak = outside.getextrema()[1]
     aura.putalpha(outside.point(lambda alpha: round(alpha * 211 / peak)))
     return premultiplied_bgra(aura, 1.0)
+
+
+# Fork (Maxi-Andres/Windows-MCP): WINDOWS_MCP_OVERLAY_STYLE=claude swaps in a quieter look.
+if os.environ.get("WINDOWS_MCP_OVERLAY_STYLE", "").strip().lower() == "claude":
+    from windows_mcp.desktop.claude_overlay_art import *  # noqa: E402,F403
