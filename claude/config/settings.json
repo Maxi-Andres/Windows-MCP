@@ -1,0 +1,37 @@
+{
+  "mcp": {
+    "name": "windows",
+    "package": "windows-mcp",
+    "python": "3.14",
+    "exclude_tools": "PowerShell,FileSystem,Registry",
+    "env": {
+      "ANONYMIZED_TELEMETRY": "false"
+    }
+  },
+  "permissions": {
+    "allow": [
+      "mcp__windows__Screenshot",
+      "mcp__windows__Snapshot",
+      "mcp__windows__DisplayInventory",
+      "mcp__windows__ControlStatus",
+      "mcp__windows__Wait",
+      "mcp__windows__WaitFor",
+      "mcp__windows__Click",
+      "mcp__windows__Move",
+      "mcp__windows__Scroll",
+      "mcp__windows__Type",
+      "mcp__windows__MultiEdit",
+      "mcp__windows__MultiSelect",
+      "mcp__windows__Shortcut",
+      "mcp__windows__App",
+      "mcp__windows__Process",
+      "mcp__windows__Scrape",
+      "mcp__windows__Notification"
+    ]
+  },
+  "hook": {
+    "event": "PreToolUse",
+    "matcher": "mcp__windows__.*",
+    "timeout": 5
+  }
+}
